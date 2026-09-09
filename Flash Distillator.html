@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Flash Distillation Tool</title>
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .slider-indigo::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .slider-indigo::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* Hide arrows in number input */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .canvas-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .param-card {
+            transition: transform 0.2s ease;
+        }
+
+        .param-card:hover {
+            transform: translateY(-2px);
+        }
+
+        #vesselCanvas {
+            width: 100%;
+            height: 250px;
+            background: white;
+            border-radius: 1rem;
+        }
+    </style>
+</head><body class="p-4 md:p-8 flex flex-col min-h-screen"><div class="max-w-7xl mx-auto flex-grow w-full"><!-- Header --><header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 border-b border-gray-300 pb-6">
+<div>
+<h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Flash Distillation Tool</h1>
+<p class="text-slate-500 font-medium">Binary System: Benzene (A) &amp; Toluene (B)</p>
+</div>
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+<div class="flex flex-col"><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pressure (P)</label>
+<div class="flex items-center gap-2"><input type="number" id="pressInput" value="1.00" step="0.01" class="w-20 font-bold text-indigo-600 outline-none"> <span class="text-xs font-bold text-slate-400 uppercase">atm</span></div>
+</div>
+</div>
+</header><main class="grid grid-cols-1 lg:grid-cols-12 gap-8"><!-- Left Panel: Controls & Results -->
+<div class="lg:col-span-4 space-y-6"><!-- Animation Section -->
+<section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 overflow-hidden">
+<h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">Process Animation</h3>
+<canvas id="vesselCanvas"></canvas></section>
+<!-- Adjustable Parameters -->
+<section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+<h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg> Adjustable Parameters</h3>
+<div class="space-y-8">
+<div>
+<div class="flex justify-between items-center mb-2"><label class="text-sm font-bold text-slate-700">Feed Rate (F)</label> <span id="fDisplay" class="text-sm font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">100.0</span></div>
+<input type="range" id="fInput" min="1" max="500" value="100" step="1" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-indigo">
+<p class="text-[10px] text-slate-400 mt-1 uppercase">mol/hr</p>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2"><label class="text-sm font-bold text-slate-700">Fraction Vaporized (f)</label> <span id="fracDisplay" class="text-sm font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">0.50</span></div>
+<input type="range" id="fracInput" min="0" max="1" value="0.5" step="0.01" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-indigo">
+<p class="text-[10px] text-slate-400 mt-1 uppercase">V/F Ratio</p>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2"><label class="text-sm font-bold text-slate-700">Feed Composition (x<sub>f</sub>)</label> <span id="xfDisplay" class="text-sm font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">0.50</span></div>
+<input type="range" id="xfInput" min="0" max="1" value="0.5" step="0.01" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-indigo">
+<p class="text-[10px] text-slate-400 mt-1 uppercase">Mole Fraction (Benzene)</p>
+</div>
+</div>
+</section>
+<!-- Non-Adjustable Results -->
+<section class="bg-slate-900 rounded-2xl p-6 shadow-xl text-white">
+<h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Process Outputs</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 param-card">
+<p class="text-[10px] font-black text-slate-500 uppercase">Distillate (D)</p>
+<p id="dOut" class="text-lg font-bold">50.0</p>
+<p class="text-[10px] text-slate-500">mol/hr</p>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 param-card">
+<p class="text-[10px] font-black text-rose-400 uppercase">Vapor (y<sub>d</sub>)</p>
+<p id="xdOut" class="text-lg font-bold text-rose-400">0.000</p>
+<p class="text-[10px] text-slate-500">Mole Frac</p>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 param-card">
+<p class="text-[10px] font-black text-slate-500 uppercase">Bottoms (B)</p>
+<p id="bOut" class="text-lg font-bold">50.0</p>
+<p class="text-[10px] text-slate-500">mol/hr</p>
+</div>
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 param-card">
+<p class="text-[10px] font-black text-blue-400 uppercase">Liquid (x<sub>b</sub>)</p>
+<p id="xbOut" class="text-lg font-bold text-blue-400">0.000</p>
+<p class="text-[10px] text-slate-500">Mole Frac</p>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-slate-700 flex justify-between items-end">
+<div>
+<p class="text-[10px] font-black text-slate-500 uppercase">Flash Temperature</p>
+<p id="tempOut" class="text-2xl font-black text-indigo-400">-- °C</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Panel: Diagrams -->
+<div class="lg:col-span-8 space-y-8"><!-- xy Diagram -->
+<section class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 flex flex-col h-full">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+<div>
+<h3 class="text-lg font-bold text-slate-800 italic">x-y Equilibrium Curve</h3>
+<p id="formulaText" class="text-xs text-slate-400 font-medium">Equilibrium curve (y = αx / [1 + (α-1)x]) with operating line: y = -((1-f)/f)x + x<sub>f</sub>/f</p>
+</div>
+</div>
+<div class="canvas-container flex-1"><canvas id="xyChart"></canvas></div>
+</section>
+</div>
+</main></div>
+<!-- Updated Footer --><footer class="mt-12 py-6 border-t border-slate-200 text-center flex flex-col gap-2">
+<p class="text-sm font-medium text-slate-400 uppercase tracking-widest">Created in <span class="text-slate-900 font-bold">Singapore Polytechnic</span></p>
+<p class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Built with Gemini AI</p>
+</footer>
+<p><script>
+        const ANTOINE = {
+            benzene: { A: 6.90565, B: 1211.033, C: 220.79 },
+            toluene: { A: 6.95464, B: 1344.8, C: 219.482 }
+        };
+
+        const getPSat = (comp, T) => {
+            const { A, B, C } = ANTOINE[comp];
+            return Math.pow(10, A - B / (T + C));
+        };
+
+        const solveBubbleT = (x1, P) => {
+            let low = 0, high = 300;
+            for(let i=0; i<40; i++) {
+                let mid = (low + high) / 2;
+                let Pcalc = x1 * getPSat('benzene', mid) + (1 - x1) * getPSat('toluene', mid);
+                if (Pcalc < P) low = mid; else high = mid;
+            }
+            return low;
+        };
+
+        const solveDewT = (y1, P) => {
+            let low = 0, high = 300;
+            for(let i=0; i<40; i++) {
+                let mid = (low + high) / 2;
+                let invPcalc = y1 / getPSat('benzene', mid) + (1 - y1) / getPSat('toluene', mid);
+                if (1/invPcalc > P) high = mid; else low = mid;
+            }
+            return low;
+        };
+
+        const el = {
+            press: document.getElementById('pressInput'),
+            f: document.getElementById('fInput'),
+            frac: document.getElementById('fracInput'),
+            xf: document.getElementById('xfInput'),
+            fDisp: document.getElementById('fDisplay'),
+            fracDisp: document.getElementById('fracDisplay'),
+            xfDisp: document.getElementById('xfDisplay'),
+            dOut: document.getElementById('dOut'),
+            bOut: document.getElementById('bOut'),
+            xdOut: document.getElementById('xdOut'),
+            xbOut: document.getElementById('xbOut'),
+            tempOut: document.getElementById('tempOut'),
+            xyCanvas: document.getElementById('xyChart'),
+            vesselCanvas: document.getElementById('vesselCanvas')
+        };
+
+        let xyChart;
+        let particles = [];
+        let state = { F: 100, f: 0.5, xf: 0.5, D: 50, B: 50 };
+
+        function update() {
+            const P = parseFloat(el.press.value) * 760;
+            const F = parseFloat(el.f.value);
+            const f = parseFloat(el.frac.value);
+            const xf = parseFloat(el.xf.value);
+
+            el.fDisp.innerText = F.toFixed(1);
+            el.fracDisp.innerText = f.toFixed(2);
+            el.xfDisp.innerText = xf.toFixed(2);
+
+            const Tbubble = solveBubbleT(xf, P);
+            const Tdew = solveDewT(xf, P);
+
+            let finalX = xf, finalY = xf;
+            let tFlash = xf === 0 ? Tbubble : (xf === 1 ? Tdew : (Tbubble + Tdew) / 2);
+            let low = Tbubble, high = Tdew;
+
+            if (f > 0 && f < 1) {
+                for(let i=0; i<50; i++) {
+                    tFlash = (low + high) / 2;
+                    const PsatA = getPSat('benzene', tFlash);
+                    const PsatB = getPSat('toluene', tFlash);
+                    const currentAlpha = PsatA / PsatB;
+                    const A_q = (1 - f) * (currentAlpha - 1);
+                    const B_q = f * currentAlpha + (1 - f) - xf * (currentAlpha - 1);
+                    const C_q = -xf;
+                    const discriminant = B_q * B_q - 4 * A_q * C_q;
+                    const x_sol = (-B_q + Math.sqrt(Math.max(0, discriminant))) / (2 * A_q);
+                    const y_sol = (currentAlpha * x_sol) / (1 + (currentAlpha - 1) * x_sol);
+                    let Pcalc = x_sol * PsatA + (1 - x_sol) * PsatB;
+                    if (Pcalc < P) low = tFlash; else high = tFlash;
+                    finalX = x_sol; finalY = y_sol;
+                }
+            } else if (f === 0) {
+                finalX = xf;
+                const alpha = getPSat('benzene', Tbubble)/getPSat('toluene', Tbubble);
+                finalY = (alpha * xf) / (1 + (alpha - 1) * xf);
+                tFlash = Tbubble;
+            } else if (f === 1) {
+                finalY = xf;
+                const alphaDew = getPSat('benzene', Tdew) / getPSat('toluene', Tdew);
+                finalX = finalY / (alphaDew - finalY * (alphaDew - 1));
+                tFlash = Tdew;
+            }
+
+            const D = F * f;
+            const B = F * (1 - f);
+            state = { F, f, xf, D, B };
+
+            el.dOut.innerText = D.toFixed(1);
+            el.bOut.innerText = B.toFixed(1);
+            el.xdOut.innerText = finalY.toFixed(3);
+            el.xbOut.innerText = finalX.toFixed(3);
+            el.tempOut.innerText = tFlash.toFixed(2) + ' °C';
+
+            const eqCurve = [];
+            const alphaCurrent = getPSat('benzene', tFlash) / getPSat('toluene', tFlash);
+            for (let i = 0; i <= 100; i++) {
+                const x = i / 100;
+                eqCurve.push({ x: x, y: (alphaCurrent * x) / (1 + (alphaCurrent - 1) * x) });
+            }
+            
+            xyChart.data.datasets[0].data = eqCurve; 
+            xyChart.data.datasets[2].data = f === 0 ? [{x: xf, y: 0}, {x: xf, y: 1}] : [{ x: xf, y: xf }, { x: 0, y: xf / f }];
+            xyChart.data.datasets[3].data = [{ x: finalX, y: finalY }, { x: xf, y: xf }];
+            xyChart.update('none');
+        }
+
+        function drawVessel() {
+            const ctx = el.vesselCanvas.getContext('2d');
+            const w = el.vesselCanvas.width = el.vesselCanvas.offsetWidth;
+            const h = el.vesselCanvas.height = el.vesselCanvas.offsetHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const vW = 80;
+            const vH = 120;
+            const vX = w / 2 - vW / 2;
+            const vY = h / 2 - vH / 2;
+
+            // Pipes
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#e2e8f0';
+            
+            // Feed Pipe
+            ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(vX, h/2); ctx.stroke();
+            // Distillate Pipe
+            ctx.beginPath(); ctx.moveTo(vX + vW/2, vY); ctx.lineTo(vX + vW/2, 20); ctx.lineTo(w, 20); ctx.stroke();
+            // Bottoms Pipe
+            ctx.beginPath(); ctx.moveTo(vX + vW/2, vY + vH); ctx.lineTo(vX + vW/2, h - 20); ctx.lineTo(w, h - 20); ctx.stroke();
+
+            // Vessel
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(vX, vY, vW, vH, 20);
+            ctx.fill();
+            ctx.stroke();
+
+            // Liquid level based on f
+            const liquidH = vH * (1 - state.f);
+            ctx.fillStyle = '#dbeafe';
+            ctx.beginPath();
+            ctx.roundRect(vX, vY + vH - liquidH, vW, liquidH, {bl: 20, br: 20});
+            ctx.fill();
+
+            // Particles
+            if (Math.random() < state.F / 500) {
+                particles.push({ x: 0, y: h/2 + (Math.random()-0.5)*10, type: 'feed', speed: 2 });
+            }
+
+            particles = particles.filter(p => {
+                ctx.fillStyle = p.type === 'feed' ? '#6366f1' : (p.type === 'vapor' ? '#fb7185' : '#60a5fa');
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.type === 'feed') {
+                    p.x += p.speed;
+                    if (p.x > vX + vW/2) {
+                        p.type = Math.random() < state.f ? 'vapor' : 'liquid';
+                    }
+                } else if (p.type === 'vapor') {
+                    if (p.y > 20) p.y -= 2;
+                    else p.x += 2;
+                } else if (p.type === 'liquid') {
+                    if (p.y < h - 20) p.y += 2;
+                    else p.x += 2;
+                }
+                return p.x < w;
+            });
+
+            // Labels
+            ctx.fillStyle = '#475569';
+            ctx.font = 'bold 10px Inter';
+            ctx.fillText(`Feed: ${state.F.toFixed(0)}`, 10, h/2 - 10);
+            ctx.fillText(`Vapor: ${state.D.toFixed(1)}`, w - 70, 15);
+            ctx.fillText(`Liquid: ${state.B.toFixed(1)}`, w - 70, h - 25);
+
+            requestAnimationFrame(drawVessel);
+        }
+
+        function init() {
+            xyChart = new Chart(el.xyCanvas.getContext('2d'), {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: 'Equilibrium', data: [], showLine: true, borderColor: '#4f46e5', borderWidth: 3, pointRadius: 0 },
+                        { label: 'y=x', data: [{x:0,y:0}, {x:1,y:1}], showLine: true, borderColor: '#cbd5e1', borderWidth: 1, pointRadius: 0, borderDash: [5,5] },
+                        { label: 'Operating Line', data: [], showLine: true, borderColor: '#10b981', borderWidth: 2, pointRadius: 0 },
+                        { label: 'Points', data: [], pointRadius: 6, backgroundColor: (ctx) => ctx.dataIndex === 0 ? '#4f46e5' : '#10b981', borderWidth: 2, borderColor: '#fff' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+                    scales: {
+                        x: { min: 0, max: 1, title: { display: true, text: 'Liquid Fraction (x)' } },
+                        y: { min: 0, max: 1, title: { display: true, text: 'Vapor Fraction (y)' } }
+                    }
+                }
+            });
+
+            [el.press, el.f, el.frac, el.xf].forEach(input => input.addEventListener('input', update));
+            update();
+            drawVessel();
+        }
+
+        window.onload = init;
+    </script></p></body></html>
